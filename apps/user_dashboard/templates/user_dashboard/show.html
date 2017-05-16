@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <a>Test App</a>
+        <a href="{% url 'dashboard:dashboard' %}">Home</a>
+        <a class="navbar-right" href="{% url 'dashboard:logout' %}">Sign out</a>
+        <a  href="{% url 'dashboard:show' id=request.session.id %}">Profile</a>
+      </div>
+    </nav>
+    {% if messages %}
+      <ul class="messages">
+      {% for message in messages %}
+        <li {% if message.tags %} class="{{message.tags}}"{% endif %}>{{message}}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+    <h2>{{user.first_name}} {{user.last_name}}</h2>
+    <div>
+      <p>Registered at: {{user.created_at}}</p>
+      <p>User ID: #{{user.id}}</p>
+      <p>Email Address: {{user.email}}</p>
+      <p>Description: {{user.description}}</p>
+    </div>
+    {% if request.session.id == user.id %}
+      <a href="{% url 'dashboard:edit' %}">Edit My Profile</a>
+    {% endif %}
+    {% if request.session.user_level == 9 %}
+      <a href="{% url 'dashboard:edit_admin' id=user.id %}">EDIT THIS USER</a>
+    {% endif %}
+    <h2>Leave a message for {{user.first_name}}</h2>
+    <form action="{% url 'dashboard:message' id=user.id %}" method="post">
+      {% csrf_token %}
+      <textarea name="message" rows="8" cols="80" required></textarea>
+      <input class="btn btn-success" type="submit" value="Post">
+    </form>
+    {% for message in user.received_messages.all %}
+      <div class="message">
+        <p><a href="{% url 'dashboard:show' id=message.sender.id  %}">{{message.sender.first_name}}</a> Wrote: </p>
+        <h4>{{message.content}}</h4>
+        <p>{{message.created_at}}</p>
+        {% if message.sender.id == request.session.id or request.session.admin_level == 9  %}
+          <a href="{% url 'dashboard:delete_message' user_id=user.id message_id=message.id %}">Delete this message</a>
+        {% endif %}
+      </div>
+      <form action="{% url 'dashboard:comment' message_id=message.id user_id=user.id %}" method="post">
+        {% csrf_token %}
+        <textarea name="comment" rows="4" cols="60" required></textarea>
+        <input class="btn btn-success" type="submit" value="Post">
+      </form>
+      {% for comment in message.message_comments.all %}
+      <div class="comment">
+        <p><a href="{% url 'dashboard:show' id=comment.user.id %}">{{comment.user.first_name}}</a> Wrote: </p>
+        <h4>{{comment.content}}</h4>
+        <p>{{comment.created_at}}</p>
+        {% if comment.user.id == request.session.id or request.session.admin_level == 9  %}
+          <a href="{% url 'dashboard:delete_comment' user_id=user.id comment_id=comment.id %}">Delete this comment</a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </body>
+</html>
